@@ -1,106 +1,128 @@
 
-import java.io._
+import java.io.{BufferedWriter, File, FileWriter}
 import java.text.SimpleDateFormat
 
-import scala.language.reflectiveCalls
+import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, Map}
-
-import java.time.format.DateTimeFormatter
+import scala.language.reflectiveCalls
 
 
 
 object CsvTask extends  App {
 
+  var bike = Map[String, Int ]()
+  var allbikes = Set[String]()
+  var Manth = Map[Int, Int]()
+  var All = ArrayBuffer[String]()
+  var mail = 0
+  var femail = 0
+  var date = 0
+  var date4 = 0
+  var alltrevel = 0
+
+
   using(io.Source.fromFile("201608-citibike-tripdata.csv")) { source =>
 
   {
-    var alltrevel = 0
-    var allbikes = Set[String]()
-    var bike = Map[String, Int ]()
-    var Manth = Map[Int, Int]()
-
-    var x = 1
-    val datetime_format = DateTimeFormatter.ofPattern("\"MM/dd/yyyy HH:mm:ss\"")
-    var date = 0
-
-
-
-
-    var mail  = 0
-    var femail = 0
-
-
-
     val allstring  = source.getLines().toArray
 
     for (line <- 1 to allstring.size-1) {
       val split_string = allstring(line).split(",")
 
-
-      val format = new SimpleDateFormat("\"MM/dd/yyyy hh:mm:ss\"")
-      val date1 = (format.parse(split_string(1)))
-
-      val date2 = (format.parse(split_string(2)))
+      manth1(split_string(1))
+      countbikeid(split_string(11))
 
 
-      if (date<(((date2.getMinutes - date1.getMinutes)*60)+(date2.getSeconds - date1.getSeconds))){
-        date = (((date2.getMinutes - date1.getMinutes)*60)+(date2.getSeconds - date1.getSeconds))
-      }
+      countusebike(split_string(11))
 
-      if (!Manth.contains(date1.getMonth)) {
-        Manth += (date1.getMonth -> (x))
-      }
 
-      else{
-        Manth(date1.getMonth) += 1
-      }
+      mail = countMail(split_string(14))
+      femail = countFemail(split_string(14))
+      date4 = trevel_time(split_string(1), split_string(2))
 
 
 
-      if (!bike.contains(split_string(11))){
-        bike += (split_string(11)-> x)
-      }
-
-      else
-
-      {
-        bike(split_string(11)) += 1
-
-      }
-
-      if (split_string(14) == "\"1\"" ){
-        mail+=1
-      }
-      if (split_string(14) == "\"2\""){
-        femail +=1
-      }
-
-
-      allbikes += split_string(11)
       alltrevel+=1
 
     }
-    //println(string_to_date )
-
-    //println(date)
-    println(allbikes.size)
-    println(bike)
-    println(Manth)
-
-    println(date)
+    val m = (mail * 100 / alltrevel + "%")
+    val f = (femail * 100 / alltrevel + "%")
+    All.append(alltrevel.toString, date4.toString, (allbikes.size).toString, f, m )
 
 
+    writeFile1("general-stats.cvs", All)
 
+    writeFile2 ("usage-stats.cvs", Manth)
 
-    println(alltrevel)
-    println(mail * 100 / alltrevel + "%")
-    println(femail * 100 / alltrevel + "%")
+    writeFile3("bike-stats.cvs", ListMap(bike.toSeq.sortWith(_._2 > _._2):_*) )
 
 
 
+
+
+    }
+  }
+
+
+  def manth1(date: String) :Unit={
+
+    val format = new SimpleDateFormat("\"MM/dd/yyyy hh:mm:ss\"")
+    val date1 = (format.parse(date))
+
+    if (!Manth.contains(date1.getMonth))
+      { Manth += (date1.getMonth -> 1) }
+    else
+      { Manth(date1.getMonth) += 1 }
+  }
+
+
+  def countbikeid(bikeid : String): Unit ={
+    allbikes += bikeid
 
 
   }
+
+
+
+  def countusebike(bikeid : String):Unit = {
+
+    if (!bike.contains(bikeid)){
+      bike += (bikeid-> 1)
+    }
+
+    else
+    {
+      bike(bikeid) += 1
+    }
+  }
+
+  def countMail(sex : String) :Int ={
+
+    if (sex == "\"1\"" ){
+      mail += 1
+    }
+    return mail
+  }
+
+  def countFemail(sex : String) :Int ={
+
+    if (sex == "\"2\"" ){
+      femail += 1
+    }
+    return femail
+  }
+  def trevel_time (datestart: String, dateend:String): Int={
+    val format = new SimpleDateFormat("\"MM/dd/yyyy hh:mm:ss\"")
+    val date1 = (format.parse(datestart))
+
+    val date2 = (format.parse(dateend))
+
+
+    if (date<(((date2.getMinutes - date1.getMinutes)*60)+(date2.getSeconds - date1.getSeconds))){
+      date = (((date2.getMinutes - date1.getMinutes)*60)+(date2.getSeconds - date1.getSeconds))
+    }
+
+    return  date
   }
 
   def using[A <: { def close(): Unit }, B](param: A)(f: A => B): B =
@@ -109,13 +131,31 @@ object CsvTask extends  App {
     } finally {
       param.close()
     }
-  def writeFile (fileName:String ,lines : ArrayBuffer[String]):Unit = {
+
+
+  def writeFile1 (fileName:String ,lines : ArrayBuffer[String]):Unit = {
     val fail = new File(fileName)
-    //val bw = BufferedWriter(new FileWriter(fileName))
+    val bw = new BufferedWriter(new FileWriter(fail))
     for (line <- lines){
-    //  bw.write(line + "\n")
+    bw.write(line + "\n")
     }
-    //bw.cloase()
+    bw.close()
+  }
+  def writeFile2 (fileName:String ,lines : Map[Int,Int]):Unit = {
+    val fail = new File(fileName)
+    val bw = new BufferedWriter(new FileWriter(fail))
+    for ((k,v) <- lines){
+      bw.write(k.toString+ "," + v.toString  + "\n")
+    }
+    bw.close()
+  }
+  def writeFile3 (fileName:String ,lines : ListMap[String,Int]):Unit = {
+    val fail = new File(fileName)
+    val bw = new BufferedWriter(new FileWriter(fail))
+    for ((k,v) <- lines){
+      bw.write(k.toString+ "," + v.toString  + "\n")
+    }
+    bw.close()
   }
 }
 
