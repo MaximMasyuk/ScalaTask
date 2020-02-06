@@ -15,17 +15,4 @@
 мне осталось сделать пункт 2д , сама функция для записи в файл у меня есть
 
 
-#!/bin/bash
 
-protected_branch='master'
-current_branch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
-
-if [ $protected_branch = $current_branch ]
-then
-    echo "You can't push to master branch" 
-	exit 1
-else
-
-	echo 
-    exit 0 # push will execute
-fi
